@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+
+  weather_db: 
+    image: postgres:13
+    ports:
+      - "5050:5000"
+    environment:
+      POSTGRES_USER: weather_collector
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: weather
+    volumes:
+      - weather-db-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - backend
+    
+  data_collection_server:
+    build: ./ingest_server
+    environment:
+      POSTGRES_USER: weather_collector
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: weather
+      POSTGRES_IP: weather_db
+    volumes:
+      - ./ingest_server:/app
+    depends_on:
+      - weather_db
+    networks:
+      - backend
+  
+volumes:
+  weather-db-data:
+
+networks:
+  backend:
