@@ -3,8 +3,6 @@ services:
 
   weather_db: 
     image: postgres:13
-    ports:
-      - "5050:5000"
     environment:
       POSTGRES_USER: weather_collector
       POSTGRES_PASSWORD: mypassword
@@ -17,6 +15,8 @@ services:
     
   data_collection_server:
     build: ./ingest_server
+    ports:
+      - "5050:5000"
     environment:
       POSTGRES_USER: weather_collector
       POSTGRES_PASSWORD: mypassword
