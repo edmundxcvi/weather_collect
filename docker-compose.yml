@@ -15,13 +15,14 @@ services:
     
   data_collection_server:
     build: ./ingest_server
+    command: ./entrypoint.sh
     ports:
       - "5050:5000"
     environment:
       POSTGRES_USER: weather_collector
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: weather
-      POSTGRES_IP: weather_db
+      POSTGRES_HOST: weather_db
     volumes:
       - ./ingest_server:/app
     depends_on:
