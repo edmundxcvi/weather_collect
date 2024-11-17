@@ -3,6 +3,9 @@ from json import loads
 import psycopg2
 import logging
 import os
+from models import WeatherObservation
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
 
 
 logging.basicConfig(
@@ -20,26 +23,26 @@ def get_db_connection():
     )
     return conn
 
+def get_db_engine():
+    return create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}/{os.getenv('POSTGRES_DB')}")
+
 
 @app.route("/data", methods=["POST"])
 def save_data():
     data = request.json
     logger.info("Received data: %s", data)
-    logger.info("Connecting to database")
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT 1;")
-    result = cur.fetchone()
-    logger.info(f"Connection successful: {result[0] == 1}")
-    # Insert data into a table
-    cur.execute(
-        "INSERT INTO data_table (field1, field2) VALUES (%s, %s)",
-        (data["field1"], data["field2"]),
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-    print(data)
+    engine = get_db_engine()
+    with Session(engine) as session:
+        for var in ["temperature"]:
+            obs = WeatherObservation(
+                station_id=1,
+                observation_datetime=data["time"],
+                variable=var,
+                value=data[var],
+            )
+            session.add(obs)
+        session.commit()
+    logger.info("Successfully inserted data into database")
     return {"status": "success"}, 201
 
 

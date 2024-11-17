@@ -2,6 +2,7 @@ from logging.config import fileConfig
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -13,6 +14,7 @@ from alembic import context
 config = context.config
 
 # Override SQLAlchemy URL to use environment variables
+load_dotenv()
 config.set_main_option(
     "sqlalchemy.url",
     f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}/{os.getenv('POSTGRES_DB')}",

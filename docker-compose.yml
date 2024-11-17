@@ -3,6 +3,8 @@ services:
 
   weather_db: 
     image: postgres:13
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: weather_collector
       POSTGRES_PASSWORD: mypassword
