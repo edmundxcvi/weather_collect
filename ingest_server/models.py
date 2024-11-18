@@ -1,6 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey
-from typing import List
+from sqlalchemy import ForeignKey, func, Uuid
+from typing import List, Optional
 from datetime import datetime
 
 
@@ -26,6 +26,7 @@ class WeatherStation(Base):
 
     station_id: Mapped[int] = mapped_column(primary_key=True)
     station_name: Mapped[str]
+    station_post_key: Mapped[str] = mapped_column(Uuid, server_default=func.gen_random_uuid())
     weather_observations: Mapped[List["WeatherObservation"]] = relationship(
         back_populates="weather_station"
     )
