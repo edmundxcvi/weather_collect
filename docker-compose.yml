@@ -36,7 +36,6 @@ services:
     image: nginx:latest
     ports:
       - "5080:80"
-      - "5443:443"
     volumes:
       - ./nginx/:/etc/nginx/conf.d 
     depends_on:
