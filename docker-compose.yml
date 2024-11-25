@@ -18,8 +18,6 @@ services:
   data_collection_server:
     build: ./ingest_server
     command: ./entrypoint.sh
-    ports:
-      - "5050:5000"
     environment:
       POSTGRES_USER: weather_collector
       POSTGRES_PASSWORD: mypassword
@@ -29,9 +27,23 @@ services:
       - ./ingest_server:/app
     depends_on:
       - weather_db
+    expose:
+      - "5000"
     networks:
       - backend
   
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d 
+    depends_on:
+      - data_collection_server
+    networks:
+      - backend
+
 volumes:
   weather-db-data:
 
