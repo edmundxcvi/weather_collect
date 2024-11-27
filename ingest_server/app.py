@@ -11,6 +11,8 @@ from models import WeatherObservation, WeatherStation
 from sqlalchemy import Engine, create_engine, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Session
+import pandas as pd 
+import altair as alt
 
 # Start logging
 logging.basicConfig(
@@ -52,6 +54,16 @@ def validate_station(api_key: str, session: Session) -> WeatherStation:
     return stations.one()
 
 
+@app.route("/ping", methods=["GET"])
+def ping() -> Tuple[str, int]:
+    """Test server connection is running
+
+    Returns:
+        Tuple[str, int]
+    """
+    return "pong", 200
+
+
 @app.route("/data", methods=["POST"])
 def save_data() -> Tuple[Dict[str, str], int]:
     """
@@ -83,10 +95,10 @@ def save_data() -> Tuple[Dict[str, str], int]:
         # Get time of reading
         data = request.json
         try:
-            obs_time = data['time']
+            obs_time = data["time"]
         except KeyError:
             logger.error("Data does not contain value for 'time'")
-            return {'status': 'error', 'message': 'Data missing time'}, 400
+            return {"status": "error", "message": "Data missing time"}, 400
 
         # Read values
         for var_name in ["temperature", "pressure", "humidity"]:
@@ -113,14 +125,27 @@ def save_data() -> Tuple[Dict[str, str], int]:
     return {"status": "success"}, 201
 
 
-@app.route("/ping", methods=["GET"])
-def ping() -> Tuple[str, int]:
-    """Test server connection is running
+@app.route("/plot", methods=["GET"])
+def plot() -> Tuple[str, int]:
+    """Create plot of temperature
 
     Returns:
         Tuple[str, int]
     """
-    return "pong", 200
+
+    # Get data
+    with Session(get_db_engine()) as session:
+        data = session.scalars(
+            select(WeatherObservation).filter(
+                WeatherObservation.variable == "temperature"
+            )
+        ).all()
+    data = pd.DataFrame([obj.__dict__ for obj in data])
+    data =  data.drop('_sa_instance_state', axis='columns', errors='ignore')
+
+    # Create chart
+    chart = alt.Chart(data[['observation_datetime', 'variable', 'value']]).mark_line().encode(x='observation_datetime', y='value', row='variable')
+    return chart.to_html(), 200
 
 
 # If file run directly then run debug server
