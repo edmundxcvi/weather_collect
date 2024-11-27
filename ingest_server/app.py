@@ -157,7 +157,6 @@ def plot() -> Tuple[str, int]:
         ).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
     data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
-
     # # Create chart
     # chart = (
     #     alt.Chart(data[["observation_datetime", "variable", "value"]])
@@ -172,18 +171,17 @@ def plot() -> Tuple[str, int]:
     # Create chart
     interval = alt.selection_interval(encodings=["x"])
     base = (
-        alt.Chart(data[["observation_datetime", "variable", "value"]])
+        alt.Chart(data[["observation_datetime", "variable", "value"]], title='Temperature')
         .mark_line()
         .encode(
             x=alt.X("observation_datetime", title="Time"),
             y=alt.Y("value", title="Temperature / ºC").scale(zero=False),
-            row="variable",
         ).transform_filter("datum.variable == 'temperature'")
     )
     chart = base.encode(
         x=alt.X("observation_datetime", title="Time").scale(domain=interval)
-    )
-    view = base.add_params(interval)
+    ).properties(height=500, width=800)
+    view = base.add_params(interval).properties(height=200, width=800)
     return (chart & view).to_html(), 200
 
 
