@@ -2,8 +2,9 @@
 Weather data collection server
 """
 
-import logging
+from loguru import logger
 import os
+import sys
 from typing import Dict, Tuple
 
 from flask import Flask, request
@@ -15,11 +16,9 @@ import pandas as pd
 import altair as alt
 
 # Start logging
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[logging.StreamHandler(), logging.FileHandler("/app/ingest_server.log")],
-)
-logger = logging.getLogger(__name__)
+logger.remove()
+logger.add("/app/ingest_server.log", level='warning', retention="2 days")
+logger.add(sys.stdout, level='debug')
 
 # Create app
 app = Flask("ingest_server")
@@ -78,17 +77,18 @@ def save_data() -> Tuple[Dict[str, str], int]:
 
         # Check that post request has an API key
         try:
+            request.root_url
             api_key = request.headers["Authorization"]
         except KeyError:
-            logger.error("Post requests require header {'Authorization': API_KEY}")
-            return {"status": "error", "message": "No API key"}, 401
+            logger.warning(f"Received post request from {request.remote_addr} without authorisation")
+            return {"status": "error", "message": "Post requests require header {'Authorization': API_KEY}"}, 401
 
         # Check that the API key is valid (and get associated station)
-        logging.debug("Validating weather station")
+        logger.debug("Validating weather station")
         try:
             weather_station = validate_station(api_key, session)
         except (NoResultFound, MultipleResultsFound) as err:
-            logger.error("Could not authenticate weather station: %s", err)
+            logger.warning(f"Received post request from {request.remote_addr} with invalid API key")
             return {"status": "error", "message": "Invalid API key"}, 403
         logger.info("Weather station authenticated successfully")
 
@@ -97,7 +97,7 @@ def save_data() -> Tuple[Dict[str, str], int]:
         try:
             obs_time = data["time"]
         except KeyError:
-            logger.error("Data does not contain value for 'time'")
+            logger.warning(f"Received post request from {request.remote_addr} without 'time' key in data")
             return {"status": "error", "message": "Data missing time"}, 400
 
         # Read values
@@ -106,7 +106,7 @@ def save_data() -> Tuple[Dict[str, str], int]:
             try:
                 obs_value = data[var_name]
             except KeyError:
-                logger.warning("Post request did not contain value for %s", var_name)
+                logger.warning(f"Received post request from {request.remote_addr} without '{var_name}' key in data")
 
             # Create new observation
             obs = WeatherObservation(
@@ -121,11 +121,11 @@ def save_data() -> Tuple[Dict[str, str], int]:
         session.commit()
 
     # Report success
-    logger.info("Successfully inserted data into database")
+    logger.info(f"Successfully handled post request from {request.remote_addr}")
     return {"status": "success"}, 201
 
 
-@app.route("/plot", methods=["GET"])
+@app.route("/", methods=["GET"])
 def plot() -> Tuple[str, int]:
     """Create plot of temperature
 
