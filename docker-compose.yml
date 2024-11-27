@@ -39,7 +39,7 @@ services:
       - ./ingest_server:/app
     depends_on:
       - weather_db
-       -nginx
+      - nginx
     expose:
       - "5000"
     networks:
