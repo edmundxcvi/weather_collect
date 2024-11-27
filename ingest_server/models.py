@@ -1,15 +1,25 @@
+"""
+SQLAlchemy models for alembic migrations and database read/writes
+"""
+
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy import ForeignKey, Uuid, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
-    pass
+    """
+    Base for weather DB
+    """
 
 
 class WeatherObservation(Base):
+    """
+    Weather observations
+    """
+
     __tablename__ = "weather_observation"
 
     observation_id: Mapped[int] = mapped_column(primary_key=True)
@@ -23,6 +33,10 @@ class WeatherObservation(Base):
 
 
 class WeatherStation(Base):
+    """
+    Weather station descriptive info
+    """
+
     __tablename__ = "weather_station"
 
     station_id: Mapped[int] = mapped_column(primary_key=True)

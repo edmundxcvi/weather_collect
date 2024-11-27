@@ -1,58 +1,133 @@
+"""
+Weather data collection server
+"""
+
 import logging
 import os
-from json import loads
+from typing import Dict, Tuple
 
-import psycopg2
 from flask import Flask, request
-from models import WeatherObservation
-from sqlalchemy import create_engine
+from models import WeatherObservation, WeatherStation
+from sqlalchemy import Engine, create_engine, select
 from sqlalchemy.orm import Session
 
+# Start logging
 logging.basicConfig(
     level=logging.INFO,
     handlers=[logging.StreamHandler(), logging.FileHandler("/app/ingest_server.log")],
 )
 logger = logging.getLogger(__name__)
 
+# Create app
 app = Flask("ingest_server")
 
 
-def get_db_connection():
-    conn = psycopg2.connect(
-        f"dbname={os.getenv('POSTGRES_DB')} user={os.getenv('POSTGRES_USER')} password={os.getenv('POSTGRES_PASSWORD')} host={os.getenv('POSTGRES_HOST')}"
-    )
-    return conn
+def get_db_engine() -> Engine:
+    """
+    Create database engine from environment variables
 
-
-def get_db_engine():
+    Retuns:
+        Engine
+    """
     return create_engine(
-        f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}/{os.getenv('POSTGRES_DB')}"
+        f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:"
+        f"{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}/"
+        f"{os.getenv('POSTGRES_DB')}"
     )
+
+
+def validate_station(api_key: str, session: Session) -> WeatherStation:
+    """
+    Checks that the post request was made by a valid weather station
+
+    Returns weather station if valid
+
+    Returns:
+        WeatherStation
+    """
+    stations = session.execute(
+        select(WeatherStation).where(WeatherStation.station_post_key == api_key)
+    ).scalars()
+    if len(stations) == 0:
+        raise ValueError("No stations found with this API key")
+    if len(stations) > 1:
+        raise ValueError(
+            f"Found {len(stations)} stations with this API key (expected 1)"
+        )
+    return stations[0]
 
 
 @app.route("/data", methods=["POST"])
-def save_data():
-    data = request.json
-    logger.info("Received data: %s", data)
-    engine = get_db_engine()
-    with Session(engine) as session:
-        for var in ["temperature"]:
+def save_data() -> Tuple[Dict[str, str], int]:
+    """
+    API endpoint for data ingestion
+
+    Returns:
+        Tuple[Dict[str, str], int]:  `{"status": "success"}, 201`
+    """
+
+    # Wrap function into a session
+    with Session(get_db_engine()) as session:
+
+        # Check that post request has an API key
+        try:
+            api_key = request.headers["Authorization"]
+        except KeyError:
+            logger.error("Post requests require header {'Authorization': API_KEY}")
+            return {"status": "error", "message": "No API key"}, 401
+
+        # Check that the API key is valid (and get associated station)
+        logging.debug("Validating weather station")
+        try:
+            weather_station = validate_station(api_key, session)
+        except ValueError as err:
+            logger.error("Could not authenticate weather station: %s", err)
+            return {"status": "error", "message": "Invalid API key"}, 403
+        logger.info("Weather station authenticated successfully")
+
+        # Get time of reading
+        data = request.json
+        try:
+            obs_time = data['time']
+        except KeyError:
+            logger.error("Data does not contain value for 'time'")
+            return {'status': 'error', 'message': 'Data missing time'}, 400
+
+        # Read values
+        for var_name in ["temperature", "pressure", "humidity"]:
+            # Get observation
+            try:
+                obs_value = data[var_name]
+            except KeyError:
+                logger.warning("Post request did not contain value for %s", var_name)
+
+            # Create new observation
             obs = WeatherObservation(
-                station_id=1,
-                observation_datetime=data["time"],
-                variable=var,
-                value=data[var],
+                weather_station=weather_station,
+                observation_datetime=obs_time,
+                variable=var_name,
+                value=obs_value,
             )
             session.add(obs)
+
+        # Add all observations
         session.commit()
+
+    # Report success
     logger.info("Successfully inserted data into database")
     return {"status": "success"}, 201
 
 
 @app.route("/ping", methods=["GET"])
-def ping():
+def ping() -> Tuple[str, int]:
+    """Test server connection is running
+
+    Returns:
+        Tuple[str, int]
+    """
     return "pong", 200
 
 
+# If file run directly then run debug server
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
