@@ -176,7 +176,7 @@ def plot() -> Tuple[str, int]:
         .mark_line()
         .encode(
             x=alt.X("observation_datetime", title="Time"),
-            y=alt.Y("value", "Temperature / ºC").scale(zero=False),
+            y=alt.Y("value", title="Temperature / ºC").scale(zero=False),
             row="variable",
         ).transform_filter("datum.variable == 'temperature'")
     )
