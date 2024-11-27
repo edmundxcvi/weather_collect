@@ -150,10 +150,7 @@ def plot() -> Tuple[str, int]:
     # Get data
     with Session(get_db_engine()) as session:
         data = session.scalars(
-            select(WeatherObservation).filter(
-                WeatherObservation.observation_datetime
-                >= pd.Timestamp.now() - pd.Timedelta(hours=8)
-            )
+            select(WeatherObservation)
         ).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
     data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
