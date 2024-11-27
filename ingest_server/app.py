@@ -1,12 +1,12 @@
-from flask import Flask, request
-from json import loads
-import psycopg2
 import logging
 import os
-from models import WeatherObservation
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine
+from json import loads
 
+import psycopg2
+from flask import Flask, request
+from models import WeatherObservation
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,8 +23,11 @@ def get_db_connection():
     )
     return conn
 
+
 def get_db_engine():
-    return create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}/{os.getenv('POSTGRES_DB')}")
+    return create_engine(
+        f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}/{os.getenv('POSTGRES_DB')}"
+    )
 
 
 @app.route("/data", methods=["POST"])
