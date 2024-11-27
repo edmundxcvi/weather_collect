@@ -11,7 +11,7 @@ from models import WeatherObservation, WeatherStation
 from sqlalchemy import Engine, create_engine, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Session
-import pandas as pd 
+import pandas as pd
 import altair as alt
 
 # Start logging
@@ -137,14 +137,22 @@ def plot() -> Tuple[str, int]:
     with Session(get_db_engine()) as session:
         data = session.scalars(
             select(WeatherObservation).filter(
-                WeatherObservation.observation_datetime >= pd.Timestamp.now() - pd.Timedelta(hours=8)
+                WeatherObservation.observation_datetime
+                >= pd.Timestamp.now() - pd.Timedelta(hours=8)
             )
         ).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
-    data =  data.drop('_sa_instance_state', axis='columns', errors='ignore')
+    data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
 
     # Create chart
-    chart = alt.Chart(data[['observation_datetime', 'variable', 'value']]).mark_line().encode(x='observation_datetime', y=alt.Y('value').scale(zero=False), row='variable')
+    chart = (
+        alt.Chart(data[["observation_datetime", "variable", "value"]])
+        .mark_line()
+        .encode(
+            x="observation_datetime", y=alt.Y("value").scale(zero=False), row="variable"
+        )
+        .resolve_scale(y="independent")
+    )
     return chart.to_html(), 200
 
 
