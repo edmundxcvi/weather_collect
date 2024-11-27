@@ -14,11 +14,14 @@ from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Session
 import pandas as pd
 import altair as alt
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Start logging
 logger.remove()
-logger.add("/app/ingest_server.log", level='warning', retention="2 days")
-logger.add(sys.stdout, level='debug')
+logger.add(os.getenv('LOG_FILE_PATH'), level='WARNING', retention="2 days")
+logger.add(sys.stdout, level='DEBUG')
 
 # Create app
 app = Flask("ingest_server")
