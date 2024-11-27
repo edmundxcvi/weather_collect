@@ -45,9 +45,9 @@ def validate_station(api_key: str, session: Session) -> WeatherStation:
     Returns:
         WeatherStation
     """
-    stations = session.execute(
+    stations = session.scalars(
         select(WeatherStation).where(WeatherStation.station_post_key == api_key)
-    ).scalars()
+    ).all()
     if len(stations) == 0:
         raise ValueError("No stations found with this API key")
     if len(stations) > 1:
