@@ -168,7 +168,7 @@ def plot() -> Tuple[str, int]:
     # Create chart
     interval = alt.selection_interval(encodings=["x"])
     base = (
-        alt.Chart(data[["observation_datetime", "variable", "value"]], title='Temperature')
+        alt.Chart(data[["observation_datetime", "variable", "value"]])
         .mark_line()
         .encode(
             x=alt.X("observation_datetime", title="Time"),
@@ -177,7 +177,7 @@ def plot() -> Tuple[str, int]:
     )
     chart = base.encode(
         x=alt.X("observation_datetime", title="Time").scale(domain=interval)
-    ).properties(height=500, width=800)
+    ).properties(height=500, width=800, title='Temperature')
     view = base.add_params(interval).properties(height=200, width=800)
     return (chart & view).to_html(), 200
 
