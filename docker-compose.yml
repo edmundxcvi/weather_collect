@@ -3,6 +3,7 @@ services:
 
   weather_db: 
     image: postgres:17
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -15,8 +16,19 @@ services:
     networks:
       - backend
     
+  nginx:
+    image: nginx:latest
+    restart: unless-stopped
+    ports:
+      - "5080:80"
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d 
+    networks:
+      - backend
+
   data_collection_server:
-    build: ./ingest_server
+    build: ./
+    restart: unless-stopped
     command: ./entrypoint.sh
     environment:
       POSTGRES_USER: weather_collector
@@ -27,19 +39,9 @@ services:
       - ./ingest_server:/app
     depends_on:
       - weather_db
+       -nginx
     expose:
       - "5000"
-    networks:
-      - backend
-  
-  nginx:
-    image: nginx:latest
-    ports:
-      - "5080:80"
-    volumes:
-      - ./nginx/:/etc/nginx/conf.d 
-    depends_on:
-      - data_collection_server
     networks:
       - backend
 
