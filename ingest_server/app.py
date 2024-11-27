@@ -137,14 +137,14 @@ def plot() -> Tuple[str, int]:
     with Session(get_db_engine()) as session:
         data = session.scalars(
             select(WeatherObservation).filter(
-                # WeatherObservation.variable == "temperature"
+                WeatherObservation.observation_datetime >= pd.Timestamp.now() - pd.Timedelta(hours=8)
             )
         ).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
     data =  data.drop('_sa_instance_state', axis='columns', errors='ignore')
 
     # Create chart
-    chart = alt.Chart(data[['observation_datetime', 'variable', 'value']]).mark_line().encode(x='observation_datetime', y='value', row='variable')
+    chart = alt.Chart(data[['observation_datetime', 'variable', 'value']]).mark_line().encode(x='observation_datetime', y=alt.Y('value').scale(zero=False), row='variable')
     return chart.to_html(), 200
 
 
