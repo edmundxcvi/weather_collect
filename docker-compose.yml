@@ -27,7 +27,7 @@ services:
       - backend
 
   data_collection_server:
-    build: ./
+    build: ./ingest_server
     restart: unless-stopped
     command: ./entrypoint.sh
     environment:
