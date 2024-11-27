@@ -20,8 +20,8 @@ load_dotenv()
 
 # Start logging
 logger.remove()
-logger.add(os.getenv('LOG_FILE_PATH'), level='WARNING', retention="2 days")
-logger.add(sys.stdout, level='DEBUG')
+logger.add(os.getenv("LOG_FILE_PATH"), level="WARNING", retention="2 days")
+logger.add(sys.stdout, level="DEBUG")
 
 # Create app
 app = Flask("ingest_server")
@@ -83,15 +83,22 @@ def save_data() -> Tuple[Dict[str, str], int]:
             request.root_url
             api_key = request.headers["Authorization"]
         except KeyError:
-            logger.warning(f"Received post request from {request.remote_addr} without authorisation")
-            return {"status": "error", "message": "Post requests require header {'Authorization': API_KEY}"}, 401
+            logger.warning(
+                f"Received post request from {request.remote_addr} without authorisation"
+            )
+            return {
+                "status": "error",
+                "message": "Post requests require header {'Authorization': API_KEY}",
+            }, 401
 
         # Check that the API key is valid (and get associated station)
         logger.debug("Validating weather station")
         try:
             weather_station = validate_station(api_key, session)
         except (NoResultFound, MultipleResultsFound) as err:
-            logger.warning(f"Received post request from {request.remote_addr} with invalid API key")
+            logger.warning(
+                f"Received post request from {request.remote_addr} with invalid API key"
+            )
             return {"status": "error", "message": "Invalid API key"}, 403
         logger.info("Weather station authenticated successfully")
 
@@ -100,7 +107,9 @@ def save_data() -> Tuple[Dict[str, str], int]:
         try:
             obs_time = data["time"]
         except KeyError:
-            logger.warning(f"Received post request from {request.remote_addr} without 'time' key in data")
+            logger.warning(
+                f"Received post request from {request.remote_addr} without 'time' key in data"
+            )
             return {"status": "error", "message": "Data missing time"}, 400
 
         # Read values
@@ -109,7 +118,9 @@ def save_data() -> Tuple[Dict[str, str], int]:
             try:
                 obs_value = data[var_name]
             except KeyError:
-                logger.warning(f"Received post request from {request.remote_addr} without '{var_name}' key in data")
+                logger.warning(
+                    f"Received post request from {request.remote_addr} without '{var_name}' key in data"
+                )
 
             # Create new observation
             obs = WeatherObservation(
@@ -147,16 +158,33 @@ def plot() -> Tuple[str, int]:
     data = pd.DataFrame([obj.__dict__ for obj in data])
     data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
 
+    # # Create chart
+    # chart = (
+    #     alt.Chart(data[["observation_datetime", "variable", "value"]])
+    #     .mark_line()
+    #     .encode(
+    #         x="observation_datetime", y=alt.Y("value").scale(zero=False), row="variable"
+    #     )
+    #     .resolve_scale(y="independent")
+    # )
+    # return chart.interactive().to_html(), 200
+
     # Create chart
-    chart = (
+    interval = alt.selection_interval(encodings=["x"])
+    base = (
         alt.Chart(data[["observation_datetime", "variable", "value"]])
         .mark_line()
         .encode(
-            x="observation_datetime", y=alt.Y("value").scale(zero=False), row="variable"
-        )
-        .resolve_scale(y="independent")
+            x=alt.X("observation_datetime", title="Time"),
+            y=alt.Y("value", "Temperature / ºC").scale(zero=False),
+            row="variable",
+        ).transform_filter("datum.variable == 'temperature'")
     )
-    return chart.interactive().to_html(), 200
+    chart = base.encode(
+        x=alt.X("observation_datetime", title="Time").scale(domain=interval)
+    )
+    view = base.add_params(interval)
+    return (chart & view).to_html(), 200
 
 
 # If file run directly then run debug server
