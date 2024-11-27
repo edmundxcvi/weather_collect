@@ -137,7 +137,7 @@ def plot() -> Tuple[str, int]:
     with Session(get_db_engine()) as session:
         data = session.scalars(
             select(WeatherObservation).filter(
-                WeatherObservation.variable == "temperature"
+                # WeatherObservation.variable == "temperature"
             )
         ).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
