@@ -9,6 +9,7 @@ from typing import Dict, Tuple
 from flask import Flask, request
 from models import WeatherObservation, WeatherStation
 from sqlalchemy import Engine, create_engine, select
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Session
 
 # Start logging
@@ -47,14 +48,8 @@ def validate_station(api_key: str, session: Session) -> WeatherStation:
     """
     stations = session.scalars(
         select(WeatherStation).where(WeatherStation.station_post_key == api_key)
-    ).all()
-    if len(stations) == 0:
-        raise ValueError("No stations found with this API key")
-    if len(stations) > 1:
-        raise ValueError(
-            f"Found {len(stations)} stations with this API key (expected 1)"
-        )
-    return stations[0]
+    )
+    return stations.one()
 
 
 @app.route("/data", methods=["POST"])
@@ -80,7 +75,7 @@ def save_data() -> Tuple[Dict[str, str], int]:
         logging.debug("Validating weather station")
         try:
             weather_station = validate_station(api_key, session)
-        except ValueError as err:
+        except (NoResultFound, MultipleResultsFound) as err:
             logger.error("Could not authenticate weather station: %s", err)
             return {"status": "error", "message": "Invalid API key"}, 403
         logger.info("Weather station authenticated successfully")
