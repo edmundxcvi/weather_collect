@@ -2,19 +2,19 @@
 Weather data collection server
 """
 
-from loguru import logger
 import os
 import sys
 from typing import Dict, Tuple
 
+import altair as alt
+import pandas as pd
+from dotenv import load_dotenv
 from flask import Flask, request
+from loguru import logger
 from models import WeatherObservation, WeatherStation
 from sqlalchemy import Engine, create_engine, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Session
-import pandas as pd
-import altair as alt
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -80,7 +80,6 @@ def save_data() -> Tuple[Dict[str, str], int]:
 
         # Check that post request has an API key
         try:
-            request.root_url
             api_key = request.headers["Authorization"]
         except KeyError:
             logger.warning(
@@ -95,7 +94,7 @@ def save_data() -> Tuple[Dict[str, str], int]:
         logger.debug("Validating weather station")
         try:
             weather_station = validate_station(api_key, session)
-        except (NoResultFound, MultipleResultsFound) as err:
+        except (NoResultFound, MultipleResultsFound):
             logger.warning(
                 f"Received post request from {request.remote_addr} with invalid API key"
             )
@@ -119,7 +118,8 @@ def save_data() -> Tuple[Dict[str, str], int]:
                 obs_value = data[var_name]
             except KeyError:
                 logger.warning(
-                    f"Received post request from {request.remote_addr} without '{var_name}' key in data"
+                    f"Received post request from {request.remote_addr} "
+                    f"without '{var_name}' key in data"
                 )
 
             # Create new observation
@@ -149,9 +149,7 @@ def plot() -> Tuple[str, int]:
 
     # Get data
     with Session(get_db_engine()) as session:
-        data = session.scalars(
-            select(WeatherObservation)
-        ).all()
+        data = session.scalars(select(WeatherObservation)).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
     data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
     # # Create chart
@@ -173,11 +171,12 @@ def plot() -> Tuple[str, int]:
         .encode(
             x=alt.X("observation_datetime", title="Time"),
             y=alt.Y("value", title="Temperature / ºC").scale(zero=False),
-        ).transform_filter("datum.variable == 'temperature'")
+        )
+        .transform_filter("datum.variable == 'temperature'")
     )
     chart = base.encode(
         x=alt.X("observation_datetime", title="Time").scale(domain=interval)
-    ).properties(height=500, width=800, title='Temperature')
+    ).properties(height=500, width=800, title="Temperature")
     view = base.add_params(interval).properties(height=200, width=800)
     return (chart & view).to_html(), 200
 
