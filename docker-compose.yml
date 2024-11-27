@@ -35,7 +35,7 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: weather
       POSTGRES_HOST: weather_db
-      LOG_FILE_PATH: app/ingest_server.log
+      LOG_FILE_PATH: /app/ingest_server.log
     volumes:
       - ./ingest_server:/app
     depends_on:
