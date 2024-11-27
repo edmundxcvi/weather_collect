@@ -156,7 +156,7 @@ def plot() -> Tuple[str, int]:
         )
         .resolve_scale(y="independent")
     )
-    return chart.to_html(), 200
+    return chart.interactive().to_html(), 200
 
 
 # If file run directly then run debug server
