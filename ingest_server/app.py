@@ -139,6 +139,13 @@ def save_data() -> Tuple[Dict[str, str], int]:
     return {"status": "success"}, 201
 
 
+var_name_map = {
+    "temperature": {"main_title": "Temperature", "y_axis_title": "Temperature / ºC"},
+    "pressure": {"main_title": "Pressure", "y_axis_title": "Pressure / mbar"},
+    "humidtity": {"main_title": "Humidity", "y_axis_title": "Humidity / ??"},
+}
+
+
 def plot_variable(var_name: str) -> str:
 
     # Get data
@@ -162,14 +169,15 @@ def plot_variable(var_name: str) -> str:
         .mark_line()
         .encode(
             x=alt.X("observation_datetime", title="Time"),
-            y=alt.Y("value", title="Temperature / ºC").scale(zero=False),
+            y=alt.Y("value", title=var_name_map[var_name]["y_axis_title"]).scale(
+                zero=False
+            ),
         )
-        .transform_filter("datum.variable == 'temperature'")
     )
     # Main chart
     chart = base.encode(
         x=alt.X("observation_datetime", title="Time").scale(domain=interval)
-    ).properties(height=500, width=800, title="Temperature")
+    ).properties(height=500, width=800, title=var_name_map[var_name]["main_title"])
     # Range selector
     view = base.add_params(interval).properties(height=200, width=800)
     return (chart & view).to_html()
