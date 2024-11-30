@@ -213,53 +213,6 @@ def plot_humidity() -> Tuple[str, int]:
     return plot_variable("humidity"), 200
 
 
-@app.route("/", methods=["GET"])
-def plot() -> Tuple[str, int]:
-    """Create plot of temperature
-
-    Returns:
-        Tuple[str, int]
-    """
-
-    # Get data
-    with Session(get_db_engine()) as session:
-        data = session.scalars(
-            select(WeatherObservation).where(
-                WeatherObservation.observation_datetime
-                >= pd.Timestamp.now() - pd.DateOffset(hours=24)
-            )
-        ).all()
-    data = pd.DataFrame([obj.__dict__ for obj in data])
-    data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
-    # # Create chart
-    # chart = (
-    #     alt.Chart(data[["observation_datetime", "variable", "value"]])
-    #     .mark_line()
-    #     .encode(
-    #         x="observation_datetime", y=alt.Y("value").scale(zero=False), row="variable"
-    #     )
-    #     .resolve_scale(y="independent")
-    # )
-    # return chart.interactive().to_html(), 200
-
-    # Create chart
-    interval = alt.selection_interval(encodings=["x"])
-    base = (
-        alt.Chart(data[["observation_datetime", "variable", "value"]])
-        .mark_line()
-        .encode(
-            x=alt.X("observation_datetime", title="Time"),
-            y=alt.Y("value", title="Temperature / ºC").scale(zero=False),
-        )
-        .transform_filter("datum.variable == 'temperature'")
-    )
-    chart = base.encode(
-        x=alt.X("observation_datetime", title="Time").scale(domain=interval)
-    ).properties(height=500, width=800, title="Temperature")
-    view = base.add_params(interval).properties(height=200, width=800)
-    return (chart & view).to_html(), 200
-
-
 # If file run directly then run debug server
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
