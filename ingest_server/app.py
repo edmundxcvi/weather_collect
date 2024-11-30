@@ -186,7 +186,7 @@ def plot_temperature() -> Tuple[str, int]:
 
 
 @app.route("/pressure", methods=["GET"])
-def plot_temperature() -> Tuple[str, int]:
+def plot_pressure() -> Tuple[str, int]:
     """Create plot of pressure
 
     Returns:
@@ -196,7 +196,7 @@ def plot_temperature() -> Tuple[str, int]:
 
 
 @app.route("/humidity", methods=["GET"])
-def plot_temperature() -> Tuple[str, int]:
+def plot_humidity() -> Tuple[str, int]:
     """Create plot of humidity
 
     Returns:
