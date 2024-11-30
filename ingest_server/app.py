@@ -149,8 +149,8 @@ def plot_variable(var_name: str) -> str:
                     WeatherObservation.observation_datetime
                     >= pd.Timestamp.now() - pd.DateOffset(hours=24)
                 )
+                & (WeatherObservation.variable == var_name)
             )
-            & (WeatherObservation.variable == var_name)
         ).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
     data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
@@ -183,6 +183,26 @@ def plot_temperature() -> Tuple[str, int]:
         Tuple[str, int]
     """
     return plot_variable("temperature"), 200
+
+
+@app.route("/pressure", methods=["GET"])
+def plot_temperature() -> Tuple[str, int]:
+    """Create plot of pressure
+
+    Returns:
+        Tuple[str, int]
+    """
+    return plot_variable("pressure"), 200
+
+
+@app.route("/humidity", methods=["GET"])
+def plot_temperature() -> Tuple[str, int]:
+    """Create plot of humidity
+
+    Returns:
+        Tuple[str, int]
+    """
+    return plot_variable("humidity"), 200
 
 
 @app.route("/", methods=["GET"])
