@@ -142,7 +142,7 @@ def save_data() -> Tuple[Dict[str, str], int]:
 var_name_map = {
     "temperature": {"main_title": "Temperature", "y_axis_title": "Temperature / ºC"},
     "pressure": {"main_title": "Pressure", "y_axis_title": "Pressure / mbar"},
-    "humidtity": {"main_title": "Humidity", "y_axis_title": "Humidity / ??"},
+    "humidity": {"main_title": "Humidity", "y_axis_title": "Humidity / ??"},
 }
 
 
