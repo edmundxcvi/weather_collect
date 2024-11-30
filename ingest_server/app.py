@@ -139,6 +139,52 @@ def save_data() -> Tuple[Dict[str, str], int]:
     return {"status": "success"}, 201
 
 
+def plot_variable(var_name: str) -> str:
+
+    # Get data
+    with Session(get_db_engine()) as session:
+        data = session.scalars(
+            select(WeatherObservation).where(
+                (
+                    WeatherObservation.observation_datetime
+                    >= pd.Timestamp.now() - pd.DateOffset(hours=24)
+                )
+            )
+            & (WeatherObservation.variable == var_name)
+        ).all()
+    data = pd.DataFrame([obj.__dict__ for obj in data])
+    data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
+
+    # Create chart
+    interval = alt.selection_interval(encodings=["x"])
+    base = (
+        alt.Chart(data[["observation_datetime", "variable", "value"]])
+        .mark_line()
+        .encode(
+            x=alt.X("observation_datetime", title="Time"),
+            y=alt.Y("value", title="Temperature / ºC").scale(zero=False),
+        )
+        .transform_filter("datum.variable == 'temperature'")
+    )
+    # Main chart
+    chart = base.encode(
+        x=alt.X("observation_datetime", title="Time").scale(domain=interval)
+    ).properties(height=500, width=800, title="Temperature")
+    # Range selector
+    view = base.add_params(interval).properties(height=200, width=800)
+    return (chart & view).to_html()
+
+
+@app.route("/temperature", methods=["GET"])
+def plot_temperature() -> Tuple[str, int]:
+    """Create plot of temperature
+
+    Returns:
+        Tuple[str, int]
+    """
+    return plot_variable("temperature"), 200
+
+
 @app.route("/", methods=["GET"])
 def plot() -> Tuple[str, int]:
     """Create plot of temperature
@@ -149,7 +195,12 @@ def plot() -> Tuple[str, int]:
 
     # Get data
     with Session(get_db_engine()) as session:
-        data = session.scalars(select(WeatherObservation)).all()
+        data = session.scalars(
+            select(WeatherObservation).where(
+                WeatherObservation.observation_datetime
+                >= pd.Timestamp.now() - pd.DateOffset(hours=24)
+            )
+        ).all()
     data = pd.DataFrame([obj.__dict__ for obj in data])
     data = data.drop("_sa_instance_state", axis="columns", errors="ignore")
     # # Create chart
