@@ -154,7 +154,7 @@ def plot_variable(var_name: str) -> str:
             select(WeatherObservation).where(
                 (
                     WeatherObservation.observation_datetime
-                    >= pd.Timestamp.now() - pd.DateOffset(hours=24)
+                    >= pd.Timestamp.now() - pd.DateOffset(hours=3 * 24)
                 )
                 & (WeatherObservation.variable == var_name)
             )
