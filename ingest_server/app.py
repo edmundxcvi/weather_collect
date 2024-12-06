@@ -104,7 +104,7 @@ def save_data() -> Tuple[Dict[str, str], int]:
         # Get time of reading
         data = request.json
         try:
-            obs_time = data["time"]
+            obs_time = data["observation_time"]
         except KeyError:
             logger.warning(
                 f"Received post request from {request.remote_addr} without 'time' key in data"
